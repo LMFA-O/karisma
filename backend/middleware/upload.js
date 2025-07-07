@@ -47,7 +47,7 @@ const uploadKelasFields = () => {
     fields.push({ name: `sesi_video_${i}`, maxCount: 1 });
   }
   fields.push({ name: 'foto_pengajar', maxCount: 1 });
-  fields.push({ name: 'gambar_kelas', maxCount: 1 });
+  fields.push({ name: 'image', maxCount: 1 });
 
   return upload.fields(fields);
 };

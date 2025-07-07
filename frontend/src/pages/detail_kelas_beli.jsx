@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { FaComment, FaTools, FaBookOpen } from "react-icons/fa";
+import { FaComment, FaTools, FaBookOpen, FaEdit, FaTrash, FaSave, FaTimes } from "react-icons/fa";
 import { GiPlagueDoctorProfile } from "react-icons/gi";
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import NotifikasiCustom from '../components/NotifikasiCustom';
 
 export default function DetailKelasUser() {
   const { id } = useParams();
@@ -12,8 +11,8 @@ export default function DetailKelasUser() {
   const [openSesi, setOpenSesi] = useState({});
   const [komentarInput, setKomentarInput] = useState('');
   const [listKomentar, setListKomentar] = useState([]);
-  const [showNotif, setShowNotif] = useState(false);
-  const [notifMessage, setNotifMessage] = useState('');
+  const [editingKomentar, setEditingKomentar] = useState(null);
+  const [editedIsi, setEditedIsi] = useState('');
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
@@ -25,19 +24,16 @@ export default function DetailKelasUser() {
         console.error('Gagal mengambil detail kelas:', err);
       }
     };
-    
 
     const fetchKomentar = async () => {
-         try {
-          const res = await axios.get(`http://localhost:5000/api/komentar/${id}`);
-          console.log('Komentar:', res);
-          setListKomentar(res.data.rows);
-        } catch (err) {
-          console.error('Gagal mengambil komentar:', err);
-        } 
+      try {
+        const res = await axios.get(`http://localhost:5000/api/komentar/${id}`);
+        setListKomentar(res.data.rows);
+      } catch (err) {
+        console.error('Gagal mengambil komentar:', err);
+      }
     };
- 
-    
+
     fetchKelas();
     fetchKomentar();
   }, [id]);
@@ -50,66 +46,72 @@ export default function DetailKelasUser() {
     if (!komentarInput.trim()) return;
 
     const token = localStorage.getItem('token');
-    if (!token) {
-      setNotifMessage('Silakan login terlebih dahulu.');
-      setShowNotif(true);
-      return;
-    }
+    if (!token) return alert('Silakan login terlebih dahulu.');
 
     try {
       const res = await axios.post(
         'http://localhost:5000/api/komentar',
-        {
-          id_kelas: id,
-          isi: komentarInput,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { id_kelas: id, isi: komentarInput },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log('Respon komentar:', res.data);
-
       if (res.data?.id) {
-        setListKomentar((prev) => [res.data, ...prev]);
         setKomentarInput('');
-        setNotifMessage('Komentar berhasil dikirim!');
-        setShowNotif(true);
-      } else {
-        throw new Error('Respon komentar tidak valid');
+        setListKomentar((prev) => [res.data, ...prev]);
       }
     } catch (err) {
-      console.error('Gagal mengirim komentar:', err);
-      setNotifMessage('Gagal mengirim komentar.');
-      setShowNotif(true);
+      console.error('Gagal kirim komentar:', err);
+      alert('Gagal mengirim komentar.');
     }
   };
 
-  const handleCloseNotif = () => {
-    setShowNotif(false);
-    setNotifMessage('');
+  const handleEdit = (komentar) => {
+    setEditingKomentar(komentar.id);
+    setEditedIsi(komentar.isi);
+  };
+
+  const handleSaveEdit = async (idKomentar) => {
+    const token = localStorage.getItem('token');
+    try {
+      await axios.put(
+        `http://localhost:5000/api/komentar/${idKomentar}`,
+        { isi: editedIsi },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setListKomentar((prev) =>
+        prev.map((item) =>
+          item.id === idKomentar ? { ...item, isi: editedIsi } : item
+        )
+      );
+      setEditingKomentar(null);
+      setEditedIsi('');
+    } catch (err) {
+      console.error('Gagal update komentar:', err);
+      alert('Gagal mengedit komentar.');
+    }
+  };
+
+  const handleDeleteKomentar = async (idKomentar) => {
+    const token = localStorage.getItem('token');
+    try {
+      await axios.delete(`http://localhost:5000/api/komentar/${idKomentar}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setListKomentar((prev) => prev.filter((item) => item.id !== idKomentar));
+    } catch (err) {
+      console.error('Gagal hapus komentar:', err);
+      alert('Gagal menghapus komentar.');
+    }
   };
 
   if (!kelas) return <p className="text-white p-4">Memuat data kelas...</p>;
 
   return (
-    <main className="min-h-screen bg-[#0a0a57] py-10 px-4 text-white">
+    <main className="relative min-h-screen bg-[#0a0a57] py-10 px-4 text-white">
       <div className="max-w-5xl mx-auto bg-white text-[#0a0a57] p-6 rounded-xl shadow-lg">
-        
-        {/* Notifikasi Custom */}
-        {showNotif && (
-          <NotifikasiCustom
-            message={notifMessage}
-            onConfirm={handleCloseNotif}
-            singleButton
-          />
-        )}
-
         <h1 className="text-2xl md:text-3xl font-bold mb-6 text-center">{kelas.judul}</h1>
 
-        {/* Informasi Pengajar dan Gambar */}
+        {/* Informasi Pengajar */}
         <div className="grid md:grid-cols-2 gap-6 items-start mb-8">
           <img
             src={`http://localhost:5000/uploads/${kelas.image}`}
@@ -218,16 +220,13 @@ export default function DetailKelasUser() {
 
             {/* List Komentar */}
             <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-              {!listKomentar?.length ? (
+              {!listKomentar.length ? (
                 <p className="text-white text-sm">Belum ada komentar.</p>
               ) : (
-                listKomentar.map((items, id) => (
-                  <article
-                    key={id}
-                    className="flex items-start gap-3 bg-white text-[#0a0a57] p-3 rounded shadow"
-                  >
+                listKomentar.map((item) => (
+                  <article key={item.id} className="flex items-start gap-3 bg-white text-[#0a0a57] p-3 rounded shadow relative">
                     <img
-                      src={`http://localhost:5000/uploads/${items.foto || 'default-avatar.png'}`}
+                      src={`http://localhost:5000/uploads/${item.foto || 'default-avatar.png'}`}
                       alt="avatar"
                       className="w-10 h-10 object-cover rounded-full border"
                       onError={(e) => {
@@ -235,22 +234,45 @@ export default function DetailKelasUser() {
                         e.target.src = '/default-avatar.png';
                       }}
                     />
-                    <div>
-                      <p className="font-semibold">{items.username}</p>
-                      <p className="text-sm">{items.isi}</p>
-                      {items.dibuat && (
-                        <p className="text-xs text-gray-500">
-                          {new Date(items.dibuat).toLocaleDateString('id-ID', {
-                            weekday: 'short',
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
+                    <div className="flex-1">
+                      <p className="font-semibold">{item.username}</p>
+                      {editingKomentar === item.id ? (
+                        <>
+                          <textarea
+                            className="w-full text-sm border rounded p-1"
+                            value={editedIsi}
+                            onChange={(e) => setEditedIsi(e.target.value)}
+                          />
+                          <div className="flex gap-2 mt-1">
+                            <button onClick={() => handleSaveEdit(item.id)} className="text-green-700"><FaSave /></button>
+                            <button onClick={() => setEditingKomentar(null)} className="text-red-700"><FaTimes /></button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm">{item.isi}</p>
+                          {item.dibuat && (
+                            <p className="text-xs text-gray-500">
+                              {new Date(item.dibuat).toLocaleDateString('id-ID', {
+                                weekday: 'short',
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
+
+                    {user?.username === item.username && editingKomentar !== item.id && (
+                      <div className="absolute right-3 top-2 flex gap-2 text-sm">
+                        <button onClick={() => handleEdit(item)} className="text-blue-600"><FaEdit /></button>
+                        <button onClick={() => handleDeleteKomentar(item.id)} className="text-red-600"><FaTrash /></button>
+                      </div>
+                    )}
                   </article>
                 ))
               )}

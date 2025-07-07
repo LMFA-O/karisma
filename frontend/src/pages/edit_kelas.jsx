@@ -249,6 +249,23 @@ export default function EditKelas() {
             )}
           </div>
 
+          <label>Gambar Kelas</label>
+          <input
+            type="file"
+            accept="image/*"
+            name="image"
+            onChange={handleChange}
+            className="cursor-pointer border p-2 w-full rounded"
+          />
+          {previewImage && (
+            <img
+              src={previewImage}
+              alt="Preview Gambar Kelas"
+              className="w-48 h-28 object-cover rounded border mt-2"
+            />
+          )}
+
+
             <h3 className="text-lg font-semibold">Tools</h3>
             {tools.map((tool, i) => (
               <div key={i} className="border p-3 space-y-2 rounded">

@@ -23,6 +23,8 @@ import EditProfile from './pages/EditProfile';
 import ListMentor from './pages/list_mentor';
 import TambahMentor from './pages/tambah_mentor';
 import EditMentor from './pages/EditMentor';
+import DashboardMentor from './pages/dashboard_mentor';
+import ProfileMentor from './pages/profile_mentor';
 
 // Components
 import Navbar from './components/navbar';
@@ -44,6 +46,8 @@ function AppContent() {
     '/tambah_mentor',
     '/EditMentor',
     '/daftar_kelas',
+    '/dashboard_mentor',
+    '/profile_mentor'
   ];
 
   const hideNavbarDynamicPaths = [
@@ -55,10 +59,8 @@ function AppContent() {
     '/detail_kelas_beli/:id',
   ];
 
-  // Cek path statis
   const hideStatic = hideNavbarPaths.includes(location.pathname);
 
-  // Cek path dinamis
   const hideDynamic = hideNavbarDynamicPaths.some((pattern) =>
     matchPath({ path: pattern, end: true }, location.pathname)
   );
@@ -70,6 +72,7 @@ function AppContent() {
       {!hideNavbar && <Navbar />}
 
       <Routes>
+        {/* User */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -92,6 +95,10 @@ function AppContent() {
         <Route path="/list_mentor" element={<ListMentor />} />
         <Route path="/tambah_mentor" element={<TambahMentor />} />
         <Route path="/EditMentor/:id" element={<EditMentor />} />
+
+        {/* Mentor */}
+        <Route path="/dashboard_mentor" element={<DashboardMentor />} />
+        <Route path="/profile_mentor" element={<ProfileMentor />} />
       </Routes>
     </>
   );

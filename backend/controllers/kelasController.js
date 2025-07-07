@@ -211,31 +211,29 @@ exports.updateKelas = async (req, res) => {
     return res.status(400).json({ message: 'Format JSON tidak valid' });
   }
 
+  const imageFile = req.files?.image?.[0]?.filename; // Gambar kelas baru
+  const oldImage = req.body.old_image || null;
+
   const toolsImages = [];
   const sesiVideos = [];
   const sesiOldVideos = [];
 
-  // Ambil file tools dan sesi berdasarkan nama dinamis
   for (let i = 0; i < 20; i++) {
     const toolFile = req.files[`tools_image_${i}`]?.[0];
     if (toolFile) toolsImages[i] = toolFile.filename;
-  }
 
-  for (let i = 0; i < 20; i++) {
     const sesiFile = req.files[`sesi_video_${i}`]?.[0];
     if (sesiFile) sesiVideos[i] = sesiFile.filename;
-  }
 
-  for (let i = 0; i < 20; i++) {
     const oldVideo = req.body[`old_sesi_video_${i}`];
     if (oldVideo) sesiOldVideos[i] = oldVideo;
   }
 
   try {
-    // ✅ Update data utama kelas
+    // ✅ Update data utama kelas termasuk image
     const [result] = await db.query(
-      `UPDATE kelas SET judul = ?, deskripsi = ?, harga = ?, nama_pengajar = ? WHERE id = ?`,
-      [judul, deskripsi, harga, nama_pengajar, id]
+      `UPDATE kelas SET judul = ?, deskripsi = ?, harga = ?, nama_pengajar = ?, image = ? WHERE id = ?`,
+      [judul, deskripsi, harga, nama_pengajar, imageFile || oldImage, id]
     );
 
     if (result.affectedRows === 0) {
@@ -255,12 +253,13 @@ exports.updateKelas = async (req, res) => {
       );
     }
 
-    // 🔁 Hapus semua sesi & relasinya
+    // 🔁 Hapus sesi lama + semua relasi
     const [sesiLama] = await db.query(`SELECT id FROM sesi WHERE id_kelas = ?`, [id]);
+
     for (const sesi of sesiLama) {
       const id_sesi = sesi.id;
-      const [quizList] = await db.query(`SELECT id_soal FROM quiz WHERE id_sesi = ?`, [id_sesi]);
 
+      const [quizList] = await db.query(`SELECT id_soal FROM quiz WHERE id_sesi = ?`, [id_sesi]);
       for (const q of quizList) {
         await db.query(`DELETE FROM jawaban WHERE id_soal = ?`, [q.id_soal]);
         await db.query(`DELETE FROM soal WHERE id = ?`, [q.id_soal]);
@@ -269,9 +268,10 @@ exports.updateKelas = async (req, res) => {
       await db.query(`DELETE FROM tugas WHERE id_sesi = ?`, [id_sesi]);
       await db.query(`DELETE FROM quiz WHERE id_sesi = ?`, [id_sesi]);
     }
+
     await db.query(`DELETE FROM sesi WHERE id_kelas = ?`, [id]);
 
-    // ➕ Tambahkan ulang semua sesi beserta relasinya
+    // ➕ Tambahkan ulang semua sesi beserta relasi
     for (let i = 0; i < sesiData.length; i++) {
       const s = sesiData[i];
       const video = sesiVideos[i] || sesiOldVideos[i];
@@ -326,6 +326,7 @@ exports.updateKelas = async (req, res) => {
     res.status(500).json({ message: 'Gagal memperbarui kelas' });
   }
 };
+
 
 // Delete Kelas
 exports.deleteKelas = async (req, res) => {

@@ -35,6 +35,8 @@ export default function Login() {
 
           if (res.data.role === 'admin') {
             navigate('/dashboard');
+          } else if(res.data.role === 'mentor') {
+            navigate('/dashboard_mentor');
           } else {
             navigate('/home');
           }

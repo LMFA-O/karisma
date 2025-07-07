@@ -2,7 +2,7 @@ const db = require('../db');
 const fs = require('fs');
 const path = require('path');
 
-// Ambil semua mentor
+// ambil semua
 exports.getListMentor = async (req, res) => {
   try {
     const [result] = await db.query(
@@ -64,7 +64,7 @@ exports.tambahMentor = async (req, res) => {
 // Update mentor
 exports.updateMentor = async (req, res) => {
   const { id } = req.params;
-  const { username, email, alamat, domisili, tanggal_lahir } = req.body;
+  const { username, email, tentang, alamat, domisili, tanggal_lahir } = req.body;
   const fotoBaru = req.file ? req.file.filename : null;
 
   try {
@@ -80,11 +80,11 @@ exports.updateMentor = async (req, res) => {
 
     const query = `
       UPDATE users 
-      SET username = ?, email = ?, alamat = ?, domisili = ?, tanggal_lahir = ?${fotoBaru ? ', foto = ?' : ''}
+      SET username = ?, email = ?, tentang = ?, alamat = ?, domisili = ?, tanggal_lahir = ?${fotoBaru ? ', foto = ?' : ''}
       WHERE id = ? AND role = 'mentor'
     `;
 
-    const params = [username, email, alamat, domisili, tanggal_lahir];
+    const params = [username, email, alamat, tentang, domisili, tanggal_lahir];
     if (fotoBaru) params.push(fotoBaru);
     params.push(id);
 

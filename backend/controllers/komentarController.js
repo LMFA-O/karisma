@@ -56,3 +56,50 @@ exports.postKomentar = async(req, res) => {
     });
   });
 };
+
+// PUT /api/komentar/:id
+exports.updateKomentar = async (req, res) => {
+  const { id } = req.params;
+  const { isi } = req.body;
+  const userId = req.user?.id;
+
+  if (!isi || !userId) {
+    return res.status(400).json({ message: 'Data tidak lengkap' });
+  }
+
+  const updateQuery = `
+    UPDATE komentar SET isi = ? WHERE id = ? AND id_user = ?
+  `;
+
+  try {
+    const [result] = await db.query(updateQuery, [isi, id, userId]);
+    if (result.affectedRows === 0) {
+      return res.status(403).json({ message: 'Kamu tidak diizinkan mengedit komentar ini' });
+    }
+    res.json({ message: 'Komentar diperbarui' });
+  } catch (err) {
+    console.error('Gagal update komentar:', err);
+    res.status(500).json({ message: 'Gagal update komentar' });
+  }
+};
+
+// DELETE /api/komentar/:id
+exports.deleteKomentar = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+
+  const deleteQuery = `
+    DELETE FROM komentar WHERE id = ? AND id_user = ?
+  `;
+
+  try {
+    const [result] = await db.query(deleteQuery, [id, userId]);
+    if (result.affectedRows === 0) {
+      return res.status(403).json({ message: 'Kamu tidak diizinkan menghapus komentar ini' });
+    }
+    res.json({ message: 'Komentar dihapus' });
+  } catch (err) {
+    console.error('Gagal hapus komentar:', err);
+    res.status(500).json({ message: 'Gagal hapus komentar' });
+  }
+};
