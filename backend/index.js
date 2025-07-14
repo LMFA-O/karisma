@@ -13,7 +13,13 @@ const app = express();
 const PORT = 5000;
 
 // Middleware
-app.use(cors());
+const corsOPtions = {
+  origin: 'http://localhost:5173',
+  methods: "Get,Head,Put,Patch,Delete,Post",
+  credentials: true,
+  optionsSuccessStatus: 204
+}
+app.use(cors(corsOPtions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
